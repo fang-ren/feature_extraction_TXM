@@ -12,7 +12,7 @@ import pandas as pd
 import seaborn as sns
 from scipy.signal import medfilt
 
-feature_path = 'data\\features\\'
+feature_path = 'data\\features_2\\'
 
 # import features
 edgejumpmap = loadmat(feature_path+ 'edgejumpmap.mat')['edgejumpmap']
@@ -21,8 +21,19 @@ peak_stack = loadmat(feature_path+ 'peak_stack.mat')['peak_stack']
 Goodness_of_fit = loadmat(feature_path+ 'Goodness_of_fit.mat')['R_squares_stack']
 noisemap_stack = loadmat(feature_path+ 'noisemap_stack.mat')['noisemap_stack']
 
-# data cleaning
-Goodness_of_fit = medfilt(Goodness_of_fit, kernel_size= 5) # filter some of the outliers
+
+# applying mask, when the value is zero
+edgejumpmap[(edgejumpmap == 0)] = np.nan
+edgeposition_stack[edgeposition_stack == 0 * (abs(edgeposition_stack - np.mean(edgeposition_stack)) > 3 * np.std(edgeposition_stack))] = np.nan
+peak_stack[peak_stack == 0] = np.nan
+Goodness_of_fit[Goodness_of_fit == 0] = np.nan
+noisemap_stack[noisemap_stack == 0] = np.nan
+
+# remove outliers using 3 sigma
+edgeposition_stack[abs(edgeposition_stack - np.nanmean(edgeposition_stack)) > 3 * np.nanstd(edgeposition_stack)] = np.nan
+peak_stack[abs(peak_stack - np.nanmean(peak_stack)) > 3 * np.nanstd(peak_stack)] = np.nan
+Goodness_of_fit[abs(Goodness_of_fit - np.nanmean(Goodness_of_fit)) > 3 * np.nanstd(Goodness_of_fit)] = np.nan
+
 
 # get the dimension of the image
 s1 = edgejumpmap.shape[0]
