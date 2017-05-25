@@ -9,7 +9,7 @@ from import_features import import_features
 
 def compress_image(edgejumpmap, edgeposition_stack, goodness_of_fit, peak_height, peak_stack, noisemap_stack):
         # compress the image for speeding up
-        keep = np.arange(0, 400, 10)
+        keep = np.arange(0, 400, 5)
         edgejumpmap = edgejumpmap[keep][:, keep]
         edgeposition_stack = edgeposition_stack[keep][:, keep]
         peak_stack = peak_stack[keep][:, keep]

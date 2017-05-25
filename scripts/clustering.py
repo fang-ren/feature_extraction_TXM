@@ -4,151 +4,299 @@ author: Fang Ren (SSRL)
 5/2/2017
 """
 
-from scipy.io import loadmat
+import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
 import os.path
-import numpy as np
 from sklearn.cluster import DBSCAN
 from sklearn.cluster import AgglomerativeClustering
 from sklearn.cluster import SpectralClustering
-from sklearn.preprocessing import scale
-from scipy.signal import medfilt
+from sklearn.cluster import KMeans
+from import_features import import_features
+from compress_image import compress_image
+from zero_mask import zero_mask
+from outlier_mask import outlier_mask
+from flatten_imArray import flatten_imArray
 
-raw_path = '..\\data\\Imgstack.mat'
-nor_path = '..\\data\\Imgstack_Nor.mat'
-energy_path = '..\\data\\Imgstack_energy.mat'
-feature_path = '..\\data\\features_2\\'
+#########################
+# user input
+edgejumpmap_mode = 'off'
+edgeposition_stack_mode = 'on'
+peak_stack_mode = 'on'
+goodness_of_fit_mode = 'on'
+noisemap_stack_mode = 'on'
+peak_height_mode = 'on'
+weight = [0.1, # edge jump
+          1,   # edge position
+          1,   # peak position
+          0.1,   # goodness_of_fit
+          0.1,   # pre-edge noise
+          1]   # peak height
 
-# import spectra
-images = loadmat(raw_path)['Imgstack']
-images_norm = loadmat(nor_path)['Nor']
-energies = loadmat(energy_path)['Es']
+num_clusters = 4
 
-# import features
-edgejumpmap = loadmat(feature_path+ 'edgejumpmap.mat')['edgejumpmap']
-edgeposition_stack = loadmat(feature_path+ 'edgeposition_stack.mat')['edgeposition_stack']
-peak_stack = loadmat(feature_path+ 'peak_stack.mat')['peak_stack']
-Goodness_of_fit = loadmat(feature_path+ 'Goodness_of_fit.mat')['R_squares_stack']
-noisemap_stack = loadmat(feature_path+ 'noisemap_stack.mat')['noisemap_stack']
-#features = np.concatenate(([edgejumpmap], [edgeposition_stack], [peak_stack], [Goodness_of_fit], [noisemap_stack]), axis = 0)
+clustering_method = 'KM'
+#########################
 
-# # apply median filter to remove noise
-# kernel = 7
-# edgejumpmap = medfilt(edgejumpmap, kernel_size= kernel)
-# edgeposition_stack = medfilt(edgeposition_stack, kernel_size= kernel)
-# peak_stack = medfilt(peak_stack, kernel_size= kernel)
-# Goodness_of_fit = medfilt(Goodness_of_fit, kernel_size= kernel)
-# noisemap_stack = medfilt(noisemap_stack, kernel_size= kernel)
+#########################
+# import 1st particle
+feature_path1 = '..\\data\\particle1\\'
+edgejumpmap1, edgeposition_stack1, goodness_of_fit1, peak_height1, peak_stack1, noisemap_stack1 = import_features(feature_path1)
+peak_stack1 = peak_stack1 + 1.5
+edgeposition_stack1 = edgeposition_stack1
+#########################
 
+#########################
+# import 2nd particle
+feature_path2 = '..\\data\\particle2\\'
+edgejumpmap2, edgeposition_stack2, goodness_of_fit2, peak_height2, peak_stack2, noisemap_stack2 = import_features(feature_path2)
+#########################
+#
+# #########################
+# # compress images for speeding up, uncomment for real results
+# edgejumpmap1, edgeposition_stack1, goodness_of_fit1, peak_height1, peak_stack1, noisemap_stack1 = compress_image(edgejumpmap1, edgeposition_stack1, goodness_of_fit1, peak_height1, peak_stack1, noisemap_stack1)
+# edgejumpmap2, edgeposition_stack2, goodness_of_fit2, peak_height2, peak_stack2, noisemap_stack2 = compress_image(edgejumpmap2, edgeposition_stack2, goodness_of_fit2, peak_height2, peak_stack2, noisemap_stack2)
+# #########################
 
-# compress the image for testing
-keep = np.arange(0, 400, 10)
-edgejumpmap = edgejumpmap[keep][:,keep]
-edgeposition_stack = edgeposition_stack[keep][:,keep]
-peak_stack = peak_stack[keep][:,keep]
-Goodness_of_fit = Goodness_of_fit[keep][:,keep]
-noisemap_stack = noisemap_stack[keep][:,keep]
-images_norm = images_norm[keep][:,keep]
-
-# plt.imshow(Goodness_of_fit)
-# plt.savefig('Goodness_of_fit.png')
-# plt.close('all')
-
-# applying mask, when the value is zero
-edgejumpmap[(edgejumpmap == 0)] = np.nan
-edgeposition_stack[edgeposition_stack == 0 * (abs(edgeposition_stack - np.mean(edgeposition_stack)) > 3 * np.std(edgeposition_stack))] = np.nan
-peak_stack[peak_stack == 0] = np.nan
-Goodness_of_fit[Goodness_of_fit == 0] = np.nan
-noisemap_stack[noisemap_stack == 0] = np.nan
-
-# remove outliers using 3 sigma
-edgeposition_stack[abs(edgeposition_stack - np.nanmean(edgeposition_stack)) > 3 * np.nanstd(edgeposition_stack)] = np.nan
-peak_stack[abs(peak_stack - np.nanmean(peak_stack)) > 3 * np.nanstd(peak_stack)] = np.nan
-Goodness_of_fit[abs(Goodness_of_fit - np.nanmean(Goodness_of_fit)) > 3 * np.nanstd(Goodness_of_fit)] = np.nan
-
-# plt.imshow(Goodness_of_fit)
-# plt.savefig('Goodness_of_fit3.png')
-# plt.close('all')
+#########################
+# applying zero mask for both particles
+edgejumpmap1, edgeposition_stack1, goodness_of_fit1, peak_height1, peak_stack1, noisemap_stack1 = zero_mask(edgejumpmap1, edgeposition_stack1, goodness_of_fit1, peak_height1, peak_stack1, noisemap_stack1)
+edgejumpmap2, edgeposition_stack2, goodness_of_fit2, peak_height2, peak_stack2, noisemap_stack2 = zero_mask(edgejumpmap2, edgeposition_stack2, goodness_of_fit2, peak_height2, peak_stack2, noisemap_stack2)
+#########################
+#
+# #########################
+# # applying outlier mask for both particles
+# edgejumpmap1, edgeposition_stack1, goodness_of_fit1, peak_height1, peak_stack1, noisemap_stack1 = outlier_mask(edgejumpmap1, edgeposition_stack1, goodness_of_fit1, peak_height1, peak_stack1, noisemap_stack1)
+# edgejumpmap2, edgeposition_stack2, goodness_of_fit2, peak_height2, peak_stack2, noisemap_stack2 = outlier_mask(edgejumpmap2, edgeposition_stack2, goodness_of_fit2, peak_height2, peak_stack2, noisemap_stack2)
+# #########################
 
 
-# print edgejumpmap
+#########################
+# visualizing features
+save_path = '..\\report\\feature_visualization\\'
+# particle 1
+plt.figure(1)
+plt.title('edge jump')
+plt.imshow(np.nan_to_num(edgejumpmap1), cmap = 'jet')
+plt.grid('off')
+plt.clim(0.01, 0.65)
+plt.colorbar()
+plt.savefig(os.path.join(save_path, 'edge jump_particle1.png'))
+plt.figure(2)
+plt.title('edge position')
+plt.imshow(np.nan_to_num(edgeposition_stack1), cmap = 'jet')
+plt.grid('off')
+plt.clim(7710, 7725)
+plt.colorbar()
+plt.savefig(os.path.join(save_path, 'edge position_particle1.png'))
+plt.figure(3)
+plt.title('first peak position')
+plt.imshow(np.nan_to_num(peak_stack1), cmap = 'jet')
+plt.grid('off')
+plt.clim(7724, 7738)
+plt.colorbar()
+plt.savefig(os.path.join(save_path, 'first peak position_particle1.png'))
+plt.figure(4)
+plt.title('goodness of fit')
+plt.imshow(np.nan_to_num(goodness_of_fit1), cmap = 'jet')
+plt.grid('off')
+plt.clim(0, 0.18)
+plt.colorbar()
+plt.savefig(os.path.join(save_path, 'goodness of fit_particle1.png'))
+plt.figure(5)
+plt.title('pre-edge noise')
+plt.imshow(np.nan_to_num(noisemap_stack1), cmap = 'jet')
+plt.grid('off')
+plt.colorbar()
+plt.clim(0.01, 0.04)
+plt.savefig(os.path.join(save_path, 'pre-edge noise_particle1.png'))
+plt.figure(6)
+plt.title('peak height')
+plt.imshow(np.nan_to_num(peak_height1), cmap = 'jet')
+plt.grid('off')
+plt.colorbar()
+plt.clim(-0.3, 3)
+plt.savefig(os.path.join(save_path, 'peak height_particle1.png'))
+plt.close('all')
 
-# get the dimension of the image
-s1 = edgejumpmap.shape[0]
-s2 = edgejumpmap.shape[1]
+# particle 2
+plt.figure(7)
+plt.title('edge jump')
+plt.imshow(np.nan_to_num(edgejumpmap2), cmap = 'jet')
+plt.grid('off')
+plt.colorbar()
+plt.clim(0.01, 0.65)
+plt.savefig(os.path.join(save_path, 'edge jump_particle2.png'))
+plt.figure(8)
+plt.title('edge position')
+plt.imshow(np.nan_to_num(edgeposition_stack2), cmap = 'jet')
+plt.grid('off')
+plt.clim(7710, 7725)
+plt.colorbar()
+plt.savefig(os.path.join(save_path, 'edge position_particle2.png'))
+plt.figure(9)
+plt.title('first peak position')
+plt.imshow(np.nan_to_num(peak_stack2), cmap = 'jet')
+plt.grid('off')
+plt.clim(7724, 7738)
+plt.colorbar()
+plt.savefig(os.path.join(save_path, 'first peak position_particle2.png'))
+plt.figure(10)
+plt.title('goodness of fit')
+plt.imshow(np.nan_to_num(goodness_of_fit2), cmap = 'jet')
+plt.grid('off')
+plt.clim(0, 0.18)
+plt.colorbar()
+plt.savefig(os.path.join(save_path, 'goodness of fit_particle2.png'))
+plt.figure(11)
+plt.title('pre-edge noise')
+plt.imshow(np.nan_to_num(noisemap_stack2), cmap = 'jet')
+plt.grid('off')
+plt.colorbar()
+plt.clim(0.01, 0.04)
+plt.savefig(os.path.join(save_path, 'pre-edge noise_particle2.png'))
+plt.figure(12)
+plt.title('peak height')
+plt.imshow(np.nan_to_num(peak_height2), cmap = 'jet')
+plt.grid('off')
+plt.colorbar()
+plt.clim(-0.3, 3)
+plt.savefig(os.path.join(save_path, 'peak height_particle2.png'))
 
-# flatten image
-edgejumpmap = edgejumpmap.reshape(s1*s2, 1)
-edgeposition_stack = edgeposition_stack.reshape(s1*s2, 1)
-peak_stack = peak_stack.reshape(s1*s2, 1)
-Goodness_of_fit = Goodness_of_fit.reshape(s1*s2, 1)
-noisemap_stack = noisemap_stack.reshape(s1*s2, 1)
+plt.close('all')
+########################
 
-# standardize the data
+#########################
+# flatten images
+s1_1 = edgejumpmap1.shape[0]
+s2_1 = edgejumpmap1.shape[1]
+s1_2 = edgejumpmap2.shape[0]
+s2_2 = edgejumpmap2.shape[1]
+edgejumpmap1, edgeposition_stack1, goodness_of_fit1, peak_height1, peak_stack1, noisemap_stack1 = flatten_imArray(edgejumpmap1, edgeposition_stack1, goodness_of_fit1, peak_height1, peak_stack1, noisemap_stack1)
+edgejumpmap2, edgeposition_stack2, goodness_of_fit2, peak_height2, peak_stack2, noisemap_stack2 = flatten_imArray(edgejumpmap2, edgeposition_stack2, goodness_of_fit2, peak_height2, peak_stack2, noisemap_stack2)
+#########################
+
+#########################
+# conbine two particle data
+edgejumpmap = np.concatenate((edgejumpmap1,edgejumpmap2))
+edgeposition_stack = np.concatenate((edgeposition_stack1, edgeposition_stack2))
+peak_stack = np.concatenate((peak_stack1, peak_stack2))
+goodness_of_fit = np.concatenate((goodness_of_fit1, goodness_of_fit2))
+noisemap_stack = np.concatenate((noisemap_stack1, noisemap_stack2))
+peak_height = np.concatenate((peak_height1, peak_height2))
+##########################
+
+##########################
+# standardized features
 edgejumpmap = (edgejumpmap - np.nanmean(edgejumpmap))/np.nanstd(edgejumpmap)
 edgeposition_stack = (edgeposition_stack - np.nanmean(edgeposition_stack))/np.nanstd(edgeposition_stack)
 peak_stack = (peak_stack - np.nanmean(peak_stack))/np.nanstd(peak_stack)
-Goodness_of_fit = (Goodness_of_fit - np.nanmean(Goodness_of_fit))/np.nanstd(Goodness_of_fit)
+goodness_of_fit = (goodness_of_fit - np.nanmean(goodness_of_fit))/np.nanstd(goodness_of_fit)
 noisemap_stack = (noisemap_stack - np.nanmean(noisemap_stack))/np.nanstd(noisemap_stack)
+peak_height = (peak_height - np.nanmean(peak_height))/np.nanstd(peak_height)
+##########################
 
 
-# incoproate all features in to a box
-features = np.concatenate((edgejumpmap, edgeposition_stack, peak_stack, Goodness_of_fit, noisemap_stack), axis = 1)
-
-# replace nan with zeros
-features = np.nan_to_num(features)
-
-# # standardize feature scale: (value - mean)/sigma
-# features = scale(features, axis = 0)
-
-# # DBSCAN
-# db = DBSCAN(eps = 0.8, min_samples= 3)
-# labels = db.fit_predict(features)
-
-# # agglomerative clustering
-# ac = AgglomerativeClustering(n_clusters = 4)
-# labels = ac.fit_predict(features)
-
-# spectral clustering
-sc = SpectralClustering(n_clusters = 4)
-labels = sc.fit_predict(features)
+##########################
+# weigh features
+edgejumpmap = edgejumpmap * weight[0]
+edgeposition_stack = edgeposition_stack * weight[1]
+peak_stack = peak_stack * weight[2]
+goodness_of_fit = goodness_of_fit * weight[3]
+noisemap_stack = noisemap_stack * weight[4]
+peak_height = peak_height * weight[5]
+##########################
 
 
-# reshape the 1D array into images
-labels = labels.reshape(s1, s2)
-edgejumpmap = features[:,0].reshape(s1 ,s2)
-edgeposition_stack = features[:,1].reshape(s1, s2)
-peak_stack = features[:,2].reshape(s1, s2)
-Goodness_of_fit = features[:,3].reshape(s1, s2)
-noisemap_stack = features[:,4].reshape(s1, s2)
 
-# visualization
-save_path = '..\\report\\'
-plt.figure(1, figsize=(12,8))
-plt.subplot(231)
-plt.title('edge jump')
-plt.imshow(edgejumpmap)
-plt.colorbar()
-plt.subplot(232)
-plt.title('edge position')
-plt.imshow(edgeposition_stack)
-#plt.clim(7650, 7982)
-plt.colorbar()
-plt.subplot(233)
-plt.title('first peak position')
-plt.imshow(peak_stack)
-#plt.clim(7650, 7742)
-plt.colorbar()
-plt.subplot(234)
-plt.title('goodness of fit')
-plt.imshow(Goodness_of_fit)
-plt.colorbar()
-plt.subplot(235)
-plt.title('pre-edge noise')
-plt.imshow(noisemap_stack)
-plt.colorbar()
-plt.subplot(236)
-plt.title('clustering')
-plt.imshow(labels)
-plt.colorbar()
-plt.savefig(os.path.join(save_path, 'clustering.png'))
+#
+# # # for debugging
+# # print np.count_nonzero(~np.isnan(edgejumpmap))
+# # print np.count_nonzero(~np.isnan(edgeposition_stack))
+# # print np.count_nonzero(~np.isnan(peak_stack))
+# # print np.count_nonzero(~np.isnan(goodness_of_fit))
+# # print np.count_nonzero(~np.isnan(noisemap_stack))
+# # print np.count_nonzero(~np.isnan(peak_height))
+# # print edgejumpmap.shape, edgeposition_stack.shape, peak_stack.shape, goodness_of_fit.shape, noisemap_stack.shape, peak_height.shape
+#
+# ##########################
+# # prepare matrix for clustering
+# # incoproate all features in to a box
+# features = []
+# if edgejumpmap_mode == 'on':
+#     features += list([edgejumpmap])
+# if edgeposition_stack_mode == 'on':
+#     features += list([edgeposition_stack])
+# if peak_stack_mode == 'on':
+#     features += list([peak_stack])
+# if goodness_of_fit_mode == 'on':
+#     features += list([goodness_of_fit])
+# if noisemap_stack_mode == 'on':
+#     features += list([noisemap_stack])
+# if peak_height_mode == 'on':
+#     features += list([peak_height])
+#
+# features = np.array(features)
+# print features.shape
+# features = features.T
+#
+# nan_mask = np.isnan(features[:,0])
+# print nan_mask.shape
+# features = np.nan_to_num(features)
+# ##########################
+#
+#
+# ##########################
+# ## clustering
+# # # DBSCAN
+# # db = DBSCAN(eps = 0.5, min_samples= num_clusters)
+# # labels = db.fit_predict(features)
+#
+# if clustering_method == 'AC':
+#     # agglomerative clustering
+#     ac = AgglomerativeClustering(n_clusters = num_clusters, linkage= 'ward')
+#     labels = ac.fit_predict(features)
+#
+# elif clustering_method == 'SC':
+#     # spectral clustering
+#     sc = SpectralClustering(n_clusters = num_clusters)
+#     labels = sc.fit_predict(features)
+#
+# elif clustering_method == 'KM':
+#     # spectral clustering
+#     km = KMeans(n_clusters = num_clusters)
+#     labels = km.fit_predict(features)
+#
+# ##########################
+#
+#
+# # reshape the 1D array into 2 images
+# labels = labels.astype(float)
+# print labels
+# print labels[nan_mask]
+# labels[nan_mask] = np.nan
+#
+# label1 = labels[:s1_1*s2_1].reshape(s1_1 ,s2_1)
+# label2 = labels[s1_1*s2_1:].reshape(s1_2 ,s2_2)
+#
+#
+#
+# # visualization
+#
+# save_path = '..\\report\\clustering\\'
+# plt.figure(1)
+# plt.title('particle 1')
+# plt.imshow(label1, cmap = 'viridis')
+# plt.grid('off')
+# plt.colorbar()
+# plt.savefig(os.path.join(save_path, 'clustering1.png'))
+#
+# plt.figure(2)
+# plt.title('particle 2')
+# plt.imshow(label2, cmap = 'viridis')
+# plt.grid('off')
+# plt.colorbar()
+# plt.savefig(os.path.join(save_path, 'clustering2.png'))
+#
+# np.savetxt(save_path+'particle1_label.csv', label1, delimiter=',')
+# np.savetxt(save_path+'particle2_label.csv', label2, delimiter=',')
