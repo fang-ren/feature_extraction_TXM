@@ -22,12 +22,17 @@ peak_stack1 = peak_stack1 + 1.5
 edgeposition_stack1 = edgeposition_stack1
 #########################
 
-#########################
+##########################
 # import 2nd particle
 feature_path2 = 'C:\\Research_FangRen\\Python codes\\feature_extraction_TXM\\data\\particle2\\'
 edgejumpmap2, edgeposition_stack2, goodness_of_fit2, peak_height2, peak_stack2, noisemap_stack2 = import_features(feature_path2)
 #########################
-#
+
+#########################
+# import 3rd particle
+feature_path3 = 'C:\\Research_FangRen\\Python codes\\feature_extraction_TXM\\data\\particle3\\'
+edgejumpmap3, edgeposition_stack3, goodness_of_fit3, peak_height3, peak_stack3, noisemap_stack3 = import_features(feature_path3)
+#########################
 #
 # #########################
 # # compress images for speeding up, uncomment for real results
@@ -39,6 +44,7 @@ edgejumpmap2, edgeposition_stack2, goodness_of_fit2, peak_height2, peak_stack2, 
 # applying zero mask for both particles
 edgejumpmap1, edgeposition_stack1, goodness_of_fit1, peak_height1, peak_stack1, noisemap_stack1 = zero_mask(edgejumpmap1, edgeposition_stack1, goodness_of_fit1, peak_height1, peak_stack1, noisemap_stack1)
 edgejumpmap2, edgeposition_stack2, goodness_of_fit2, peak_height2, peak_stack2, noisemap_stack2 = zero_mask(edgejumpmap2, edgeposition_stack2, goodness_of_fit2, peak_height2, peak_stack2, noisemap_stack2)
+edgejumpmap3, edgeposition_stack3, goodness_of_fit3, peak_height3, peak_stack3, noisemap_stack3 = zero_mask(edgejumpmap3, edgeposition_stack3, goodness_of_fit3, peak_height3, peak_stack3, noisemap_stack3)
 #########################
 #
 # #########################
@@ -51,17 +57,18 @@ edgejumpmap2, edgeposition_stack2, goodness_of_fit2, peak_height2, peak_stack2, 
 # flatten images
 edgejumpmap1, edgeposition_stack1, goodness_of_fit1, peak_height1, peak_stack1, noisemap_stack1 = flatten_imArray(edgejumpmap1, edgeposition_stack1, goodness_of_fit1, peak_height1, peak_stack1, noisemap_stack1)
 edgejumpmap2, edgeposition_stack2, goodness_of_fit2, peak_height2, peak_stack2, noisemap_stack2 = flatten_imArray(edgejumpmap2, edgeposition_stack2, goodness_of_fit2, peak_height2, peak_stack2, noisemap_stack2)
+edgejumpmap3, edgeposition_stack3, goodness_of_fit3, peak_height3, peak_stack3, noisemap_stack3 = flatten_imArray(edgejumpmap3, edgeposition_stack3, goodness_of_fit3, peak_height3, peak_stack3, noisemap_stack3)
 #########################
 
 
 #########################
-# conbine two particle data
-edgejumpmap = edgejumpmap1 + edgejumpmap2
-edgeposition_stack = edgeposition_stack1 + edgeposition_stack2
-peak_stack = peak_stack1 + peak_stack2
-goodness_of_fit = goodness_of_fit1 + goodness_of_fit2
-noisemap_stack = noisemap_stack1 + noisemap_stack2
-peak_height = peak_height1 + peak_height2
+# conbine three particle data
+edgejumpmap = edgejumpmap1 + edgejumpmap2 + edgejumpmap3
+edgeposition_stack = edgeposition_stack1 + edgeposition_stack2 + edgeposition_stack3
+peak_stack = peak_stack1 + peak_stack2 + peak_stack3
+goodness_of_fit = goodness_of_fit1 + goodness_of_fit2 + goodness_of_fit3
+noisemap_stack = noisemap_stack1 + noisemap_stack2 + noisemap_stack3
+peak_height = peak_height1 + peak_height2 + peak_height3
 
 data = pd.DataFrame({'edge jump': edgejumpmap, 'edge position':edgeposition_stack, 'peak position':peak_stack, 'goodness of fit':goodness_of_fit, 'pre-edge noise':noisemap_stack, 'peak height':peak_height})
 data = data.astype(float)
