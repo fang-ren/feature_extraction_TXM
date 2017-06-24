@@ -338,8 +338,8 @@ print labels.shape
 print s1_1,s2_1, s1_2, s2_2, s1_3,s2_3
 
 label1 = labels[:s1_1*s2_1].reshape(s1_1 ,s2_1)
-label2 = labels[s1_1*s2_1:s1_2*s2_2].reshape(s1_2 ,s2_2)
-label3 = labels[s1_2*s2_2:].reshape(s1_3 ,s2_3)
+label2 = labels[s1_1*s2_1:(s1_2*s2_2+s1_1*s2_1)].reshape(s1_2 ,s2_2)
+label3 = labels[(s1_2*s2_2+s1_1*s2_1):].reshape(s1_3 ,s2_3)
 
 
 # visualization
