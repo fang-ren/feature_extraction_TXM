@@ -56,6 +56,8 @@ edgejumpmap2, edgeposition_stack2, goodness_of_fit2, peak_height2, peak_stack2, 
 # import 3rd particle
 feature_path3 = 'C:\\Research_FangRen\\Python codes\\feature_extraction_TXM\\data\\particle3\\'
 edgejumpmap3, edgeposition_stack3, goodness_of_fit3, peak_height3, peak_stack3, noisemap_stack3 = import_features(feature_path3)
+peak_stack3 = peak_stack3 - 0
+edgeposition_stack3 = edgeposition_stack3 -0.1
 #########################
 #
 # #########################
