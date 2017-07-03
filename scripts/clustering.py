@@ -17,6 +17,7 @@ from compress_image import compress_image
 from zero_mask import zero_mask
 from outlier_mask import outlier_mask
 from flatten_imArray import flatten_imArray
+from circular_mask import circular_mask
 
 #########################
 # user input
@@ -42,7 +43,6 @@ clustering_method = 'KM'
 # import 1st particle
 feature_path1 = '..\\data\\particle1\\'
 edgejumpmap1, edgeposition_stack1, goodness_of_fit1, peak_height1, peak_stack1, noisemap_stack1 = import_features(feature_path1)
-peak_stack1 = peak_stack1 + 1.5
 edgeposition_stack1 = edgeposition_stack1
 #########################
 
@@ -56,14 +56,32 @@ edgejumpmap2, edgeposition_stack2, goodness_of_fit2, peak_height2, peak_stack2, 
 # import 3rd particle
 feature_path3 = 'C:\\Research_FangRen\\Python codes\\feature_extraction_TXM\\data\\particle3\\'
 edgejumpmap3, edgeposition_stack3, goodness_of_fit3, peak_height3, peak_stack3, noisemap_stack3 = import_features(feature_path3)
-peak_stack3 = peak_stack3 - 0
-edgeposition_stack3 = edgeposition_stack3 -0.1
+peak_stack3[peak_stack3 == -1.2] = 0
 #########################
 #
 # #########################
 # # compress images for speeding up, uncomment for real results
 # edgejumpmap1, edgeposition_stack1, goodness_of_fit1, peak_height1, peak_stack1, noisemap_stack1 = compress_image(edgejumpmap1, edgeposition_stack1, goodness_of_fit1, peak_height1, peak_stack1, noisemap_stack1)
 # edgejumpmap2, edgeposition_stack2, goodness_of_fit2, peak_height2, peak_stack2, noisemap_stack2 = compress_image(edgejumpmap2, edgeposition_stack2, goodness_of_fit2, peak_height2, peak_stack2, noisemap_stack2)
+# #########################
+
+# #########################
+# # applying circular mask for both particles
+# mask1 = circular_mask((edgejumpmap1.shape[0],edgejumpmap1.shape[1]), (195, 227), 46)
+# print mask1
+# edgejumpmap1[mask1] = np.nan
+# edgeposition_stack1[mask1] = np.nan
+# goodness_of_fit1[mask1] = np.nan
+# peak_height1[mask1] = np.nan
+# peak_stack1[mask1] = np.nan
+#
+# mask2 = circular_mask((edgejumpmap1.shape[0],edgejumpmap1.shape[1]), (170, 220), 120)
+# edgejumpmap2[mask2] = np.nan
+# edgeposition_stack2[mask2] = np.nan
+# goodness_of_fit2[mask2] = np.nan
+# peak_height2[mask2] = np.nan
+# peak_stack2[mask2] = np.nan
+# noisemap_stack2[mask2] = np.nan
 # #########################
 
 #########################
@@ -73,6 +91,12 @@ edgejumpmap2, edgeposition_stack2, goodness_of_fit2, peak_height2, peak_stack2, 
 edgejumpmap3, edgeposition_stack3, goodness_of_fit3, peak_height3, peak_stack3, noisemap_stack3 = zero_mask(edgejumpmap3, edgeposition_stack3, goodness_of_fit3, peak_height3, peak_stack3, noisemap_stack3)
 #########################
 #
+
+# # peak position adjustment
+peak_stack1 = peak_stack1 +1.4
+edgeposition_stack1 = edgeposition_stack1 + 1.2
+peak_stack3 = peak_stack3 + 0.9
+edgeposition_stack3 = edgeposition_stack3 + 1.3
 # #########################
 # # applying outlier mask for both particles
 # edgejumpmap1, edgeposition_stack1, goodness_of_fit1, peak_height1, peak_stack1, noisemap_stack1 = outlier_mask(edgejumpmap1, edgeposition_stack1, goodness_of_fit1, peak_height1, peak_stack1, noisemap_stack1)
@@ -324,7 +348,7 @@ elif clustering_method == 'SC':
 
 elif clustering_method == 'KM':
     # spectral clustering
-    km = KMeans(n_clusters = num_clusters)
+    km = KMeans(n_clusters = num_clusters, random_state= 1)
     labels = km.fit_predict(features)
 
 ##########################
