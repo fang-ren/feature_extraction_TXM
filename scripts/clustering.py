@@ -15,9 +15,11 @@ from sklearn.cluster import KMeans
 from import_features import import_features
 from compress_image import compress_image
 from zero_mask import zero_mask
+from odd_value_mask import odd_value_mask
 from outlier_mask import outlier_mask
 from flatten_imArray import flatten_imArray
 from circular_mask import circular_mask
+from scipy.io import savemat
 
 #########################
 # user input
@@ -56,7 +58,6 @@ edgejumpmap2, edgeposition_stack2, goodness_of_fit2, peak_height2, peak_stack2, 
 # import 3rd particle
 feature_path3 = 'C:\\Research_FangRen\\Python codes\\feature_extraction_TXM\\data\\particle3\\'
 edgejumpmap3, edgeposition_stack3, goodness_of_fit3, peak_height3, peak_stack3, noisemap_stack3 = import_features(feature_path3)
-peak_stack3[peak_stack3 == -1.2] = 0
 #########################
 #
 # #########################
@@ -85,18 +86,19 @@ peak_stack3[peak_stack3 == -1.2] = 0
 # #########################
 
 #########################
+# applying odd value mask for  particles
+edgejumpmap1, edgeposition_stack1, goodness_of_fit1, peak_height1, peak_stack1, noisemap_stack1 = odd_value_mask(edgejumpmap1, edgeposition_stack1, goodness_of_fit1, peak_height1, peak_stack1, noisemap_stack1)
+edgejumpmap2, edgeposition_stack2, goodness_of_fit2, peak_height2, peak_stack2, noisemap_stack2 = odd_value_mask(edgejumpmap2, edgeposition_stack2, goodness_of_fit2, peak_height2, peak_stack2, noisemap_stack2)
+edgejumpmap3, edgeposition_stack3, goodness_of_fit3, peak_height3, peak_stack3, noisemap_stack3 = odd_value_mask(edgejumpmap3, edgeposition_stack3, goodness_of_fit3, peak_height3, peak_stack3, noisemap_stack3)
+#########################
+
+#########################
 # applying zero mask for both particles
 edgejumpmap1, edgeposition_stack1, goodness_of_fit1, peak_height1, peak_stack1, noisemap_stack1 = zero_mask(edgejumpmap1, edgeposition_stack1, goodness_of_fit1, peak_height1, peak_stack1, noisemap_stack1)
 edgejumpmap2, edgeposition_stack2, goodness_of_fit2, peak_height2, peak_stack2, noisemap_stack2 = zero_mask(edgejumpmap2, edgeposition_stack2, goodness_of_fit2, peak_height2, peak_stack2, noisemap_stack2)
 edgejumpmap3, edgeposition_stack3, goodness_of_fit3, peak_height3, peak_stack3, noisemap_stack3 = zero_mask(edgejumpmap3, edgeposition_stack3, goodness_of_fit3, peak_height3, peak_stack3, noisemap_stack3)
 #########################
-#
 
-# # peak position adjustment
-peak_stack1 = peak_stack1 +1.4
-edgeposition_stack1 = edgeposition_stack1 + 1.2
-peak_stack3 = peak_stack3 + 0.9
-edgeposition_stack3 = edgeposition_stack3 + 1.3
 # #########################
 # # applying outlier mask for both particles
 # edgejumpmap1, edgeposition_stack1, goodness_of_fit1, peak_height1, peak_stack1, noisemap_stack1 = outlier_mask(edgejumpmap1, edgeposition_stack1, goodness_of_fit1, peak_height1, peak_stack1, noisemap_stack1)
@@ -391,6 +393,10 @@ plt.grid('off')
 plt.colorbar()
 plt.savefig(os.path.join(save_path, 'clustering3.png'))
 
-np.savetxt(save_path+'particle1_label.csv', label1, delimiter=',')
-np.savetxt(save_path+'particle2_label.csv', label2, delimiter=',')
-np.savetxt(save_path+'particle3_label.csv', label2, delimiter=',')
+savemat(save_path + 'particle1_label.mat', {'labels':label1})
+savemat(save_path + 'particle2_label.mat', {'labels':label2})
+savemat(save_path + 'particle3_label.mat', {'labels':label3})
+
+# np.savetxt(save_path+'particle1_label.csv', label1, delimiter=',')
+# np.savetxt(save_path+'particle2_label.csv', label2, delimiter=',')
+# np.savetxt(save_path+'particle3_label.csv', label2, delimiter=',')
