@@ -271,6 +271,7 @@ noisemap_stack = np.concatenate((noisemap_stack1, noisemap_stack2, noisemap_stac
 peak_height = np.concatenate((peak_height1, peak_height2, peak_height3))
 ##########################
 
+print edgejumpmap.shape, edgeposition_stack.shape, peak_stack.shape, goodness_of_fit.shape, noisemap_stack.shape, peak_height.shape
 
 ##########################
 # standardized features
